@@ -18,7 +18,7 @@ const SyncPage = () => {
     const handleSync = async () => {
         setSyncLoading(true);
         const response = await fetch('/api/sync/route');
-        await toggleActive();
+        toggleActive();
         setSyncLoading(false);
     };
 

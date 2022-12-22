@@ -6,6 +6,7 @@ import serveStatic from "serve-static";
 
 import shopify from "./shopify.js";
 import productCreator from "./product-creator.js";
+import productUpdater from "./product-updater.js";
 import GDPRWebhookHandlers from "./gdpr.js";
 import axios from "axios";
 import mongoose from "mongoose";
@@ -71,20 +72,47 @@ app.post("/api/products/create", async (req, res) => {
 
   let courseID = req.body.courseID;
   
-  let courseName = await SyncCourses.findOne({
+  let courseDetails = await SyncCourses.findOne({
     'course.id': courseID
   });
   
-  courseName = courseName.course.displayname;
+  let courseName = courseDetails.course.displayname;
+  let courseSummary = courseDetails.course.summary;
 
   try {
     
-    const createProduct = await productCreator(res.locals.shopify.session, courseName);
+    const createProduct = await productCreator(res.locals.shopify.session, courseName, courseSummary);
 
     let oldvalues = { 'course.id': courseID }
     let newvalues = { $set: { 'product': createProduct.productCreate.product } };
 
     await SyncCourses.findOneAndUpdate( oldvalues, newvalues );
+
+  } catch (e) {
+    console.log(`Failed to process products/create: ${e.message}`);
+    status = 500;
+    error = e.message;
+  }
+  res.status(status).send({ success: status === 200, error });
+});
+
+app.put("/api/products/update", async (req, res) => {
+  let status = 200;
+  let error = null;
+
+  let courseID = req.body.courseID;
+  
+  let courseDetails = await SyncCourses.findOne({
+    'course.id': courseID
+  });
+  
+  let courseName = courseDetails.course.displayname;
+  let courseSummary = courseDetails.course.summary;
+  let productID = courseDetails.product.id;
+
+  try {
+    
+    const updateProduct = await productUpdater(res.locals.shopify.session, courseName, courseSummary, productID);
 
   } catch (e) {
     console.log(`Failed to process products/create: ${e.message}`);
@@ -180,7 +208,7 @@ function applyPublicEndpoints(app) {
         await SyncCoursesFunction(mdl_courses_w_categories, session, i);
       };
 
-      res.status(200).send('success');
+      res.status(200).send({'success': mdl_courses_w_categories});
     } catch (error) {
       console.log("ERROR", error);
       res.status(500).send({'error': error})
@@ -193,23 +221,15 @@ function applyPublicEndpoints(app) {
 const SyncCoursesFunction = async(mdl_courses_w_categories, session, i) => {
 
   const checkShop = await SyncCourses.findOne({
-    "course": mdl_courses_w_categories[i]
+    "course.id": mdl_courses_w_categories[i].id
   }).exec();
 
   if (checkShop) {
 
-    await SyncCourses.findOneAndUpdate(
-      {
-        course: mdl_courses_w_categories[i]
-      },
-      {
-        course: mdl_courses_w_categories[i],
-        updated_at: new Date()
-      },
-      {
-        upsert: true,
-      }
-    ).exec();
+    let oldvalues = { "course.id": mdl_courses_w_categories[i].id };
+    let newvalues = { $set: { 'course': mdl_courses_w_categories[i] }};
+
+    await SyncCourses.findOneAndUpdate( oldvalues, newvalues );
 
     console.log("Courses Updated Successfully");
 

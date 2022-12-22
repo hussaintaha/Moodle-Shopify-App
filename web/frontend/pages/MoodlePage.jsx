@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuthenticatedFetch } from '../hooks/useAuthenticatedFetch';
 import { useNavigate } from '@shopify/app-bridge-react';
 
-
 const MoodlePage = () => {
 
     const navigate = useNavigate();
@@ -13,22 +12,31 @@ const MoodlePage = () => {
     const [courseID, setCourseID] = useState('');
     const [syncLoading, setSyncLoading] = useState(false);
     const [syncLoadingNew, setSyncLoadingNew] = useState(false);
+    const [syncLoadingUpdate, setSyncLoadingUpdate] = useState(false);
+    const [toastMsg, setToastMsg] = useState('');
+    const [courseDescription, setCourseDescription] = useState('');
 
     const { selectedResources, allResourcesSelected, handleSelectionChange } = useIndexResourceState(courses);
 
     const [active, setActive] = useState(false);
     const [courseFetch, setCourseFetch] = useState(false);
+    const [courseUpdate, setCourseUpdate] = useState(false);
 
     const toggleActive = useCallback(() => setActive((active) => !active), []);
     const toggleFetch = useCallback(() => setCourseFetch((courseFetch) => !courseFetch), []);
+    const toggleUpdate = useCallback(() => setCourseUpdate((courseUpdate) => !courseUpdate), []);
 
     const toastMarkup = active ? (
-        <Toast content="Product created successfully!" onDismiss={toggleActive} />
+        <Toast content="Product Created Successfully!" onDismiss={toggleActive} />
     ) : null;
 
     const toastMarkupNew = courseFetch ? (
-        <Toast content="Courses synced successfully!" onDismiss={toggleFetch} />
+        <Toast content={toastMsg} onDismiss={toggleFetch} />
     ) : null;
+
+    const toastMarkupUpdate = courseUpdate ? (
+        <Toast content="Product Updated!" onDismiss={toggleUpdate} />
+    ) : null;    
 
     const fetch = useAuthenticatedFetch();
 
@@ -36,27 +44,28 @@ const MoodlePage = () => {
         handleFetch();
     }, []);
 
-
     useEffect(() => {
         const the_course = courses.find(crs => crs.course.id === selectedResources[0])
 
-
         if (the_course) {
             setCourseID(the_course.course.id);
-            setCheckProduct(the_course.product)
+            setCheckProduct(the_course.product);
+            setCourseDescription(the_course.course.summary);
         }
-
 
     }, [selectedResources]);
 
     const handleFetch = async () => {
         setSyncLoading(true);
         const response = await fetch('/api/testing/route')
-            .then(response => response.json());
+        .then(response => response.json());
 
         setCourses(response);
         setSyncLoading(false);
-        await toggleFetch();
+
+        response.length !== 0 ? setToastMsg('Courses synced successfully!') : setToastMsg('No Courses Found. Please Sync the Courses');
+
+        toggleFetch();
     };
 
     const handleCreateProduct = async () => {
@@ -64,7 +73,8 @@ const MoodlePage = () => {
         setSyncLoadingNew(true);
 
         const payload = {
-            courseID: courseID
+            courseID: courseID,
+            courseDescription: courseDescription 
         };
 
         const data = {
@@ -74,7 +84,7 @@ const MoodlePage = () => {
         };
 
         await fetch('/api/products/create', data)
-            .then(response => response.json());
+        .then(response => response.json());
 
         toggleActive();
         setSyncLoadingNew(false);
@@ -82,7 +92,26 @@ const MoodlePage = () => {
     };
 
     const handleUpdateProduct = async () => {
-        console.log("CLICKED");
+
+        setSyncLoadingUpdate(true);
+
+        const payload = {
+            courseID: courseID,
+            courseDescription: courseDescription 
+        };
+
+        const data = {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        };
+
+        await fetch('/api/products/update', data)
+        .then(response => response.json());
+
+        toggleUpdate();
+        setSyncLoadingUpdate(false);
+        await handleFetch();
     };
 
     const resourceName = {
@@ -152,12 +181,15 @@ const MoodlePage = () => {
                                     <div></div> :
                                     (checkProduct === 'Not Created') ?
                                         <Button loading={syncLoadingNew} onClick={handleCreateProduct} primary>Create Product</Button> :
-                                        <Button onClick={handleUpdateProduct} primary>Update Product</Button>
+                                        <Button loading={syncLoadingUpdate} onClick={handleUpdateProduct} primary>Update Product</Button>
                             }
                         </Layout.Section>
                     </Layout>
                 </Page>
 
+                <Frame>
+                    {toastMarkupUpdate}
+                </Frame>
                 <Frame>
                     {toastMarkup}
                 </Frame>
