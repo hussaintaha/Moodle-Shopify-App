@@ -75,6 +75,7 @@ const CREATE_PRODUCTS_MUTATION = `
     productCreate(input: $input) {
       product {
         id
+        title
       }
     }
   }
@@ -82,24 +83,27 @@ const CREATE_PRODUCTS_MUTATION = `
 
 export default async function productCreator(
   session,
-  count = DEFAULT_PRODUCTS_COUNT
+  courseName,
+  count = DEFAULT_PRODUCTS_COUNT,
 ) {
   const client = new shopify.api.clients.Graphql({ session });
 
   try {
-    for (let i = 0; i < count; i++) {
-      await client.query({
+    // for (let i = 0; i < count; i++) {
+      const response = await client.query({
         data: {
           query: CREATE_PRODUCTS_MUTATION,
           variables: {
             input: {
-              title: `${randomTitle()}`,
+              // title: `${randomTitle()}`,
+              title: courseName,
               variants: [{ price: randomPrice() }],
             },
           },
         },
       });
-    }
+    // }
+    return response.body.data;
   } catch (error) {
     if (error instanceof GraphqlQueryError) {
       throw new Error(
