@@ -15,6 +15,7 @@ const MoodlePage = () => {
     const [syncLoadingUpdate, setSyncLoadingUpdate] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const [courseDescription, setCourseDescription] = useState('');
+    const [shopName, setShopName] = useState('');
 
     const { selectedResources, allResourcesSelected, handleSelectionChange } = useIndexResourceState(courses);
 
@@ -41,7 +42,11 @@ const MoodlePage = () => {
     const fetch = useAuthenticatedFetch();
 
     useEffect(async () => {
-        handleFetch();
+        await handleFetch();
+
+        const getShopName = await handlePageData();
+
+        setShopName(getShopName);
     }, []);
 
     useEffect(async() => {
@@ -66,6 +71,13 @@ const MoodlePage = () => {
         response.length !== 0 ? setToastMsg('Courses synced successfully!') : setToastMsg('No Courses Found. Please Sync the Courses');
 
         toggleFetch();
+    };
+
+    const handlePageData = async () => {
+        const response = await fetch("/api/data/get")
+        .then(response => response.json());
+        
+        return response.data[0].shop;
     };
 
     const handleCreateProduct = async () => {
@@ -135,7 +147,7 @@ const MoodlePage = () => {
                         product == 'Not Created' ?
                             product :
                             <Link removeUnderline={true} onClick={() => {
-                                navigate(`https://test-store-2022-22.myshopify.com/admin/products/${product.id.replace("gid://shopify/Product/", "")}`, {
+                                navigate(`https://${shopName}/admin/products/${product.id.replace("gid://shopify/Product/", "")}`, {
                                     target: "new"
                                 });
                             }}>{product?.title}</Link>
