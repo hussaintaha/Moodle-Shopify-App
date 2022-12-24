@@ -12,6 +12,7 @@ import axios from "axios";
 import mongoose from "mongoose";
 import SyncCourses from "./models/SyncCourses.js";
 import MoodleSettings from "./models/MoodleSettings.js";
+import scriptCreator from "./scripttag-create.js";
 
 const connectDB = async () => {
   try {
@@ -52,6 +53,8 @@ app.post(
   shopify.config.webhooks.path,
   shopify.processWebhooks({ webhookHandlers: GDPRWebhookHandlers })
 );
+
+applyNonAuthPublicEndpoints(app);
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
@@ -163,30 +166,37 @@ function applyPublicEndpoints(app) {
 
     const session = res.locals.shopify.session;
 
-    const script_tag = new shopify.api.rest.ScriptTag({ session: session });
-    script_tag.event = "onload";
-    script_tag.src = "https://example.com/my_script.js";
-    await script_tag.save({
-      update: true,
-    });
+    console.log("SESSION", session);
 
-  });
+    // const getAllScripts = await shopify.api.rest.ScriptTag.all({ session });
 
-  app.get("/api/test/storefront", async (req, res) => {
+    // let hostName = `https://${req.headers.host}/api/test/storefront/?shop=${session.shop}`;
 
-    try {
-      const htmlFile = join(
-        `${process.cwd()}/`,
-        "storefront.js"
-      );
+    // https://test-store-2022-22.myshopify.com/admin/api/2022-10/script_tags.json
+    // const response = await shopify.api.rest.ScriptTag.delete({ session, id: 192796557520 });
 
-      return res
-        .status(200)
-        .set("Content-Type", "text/javascript")
-        .send(readFileSync(htmlFile));
-    } catch (error) {
-      console.log("ERROR", error);
-    }
+    // const response = await scriptCreator(session);
+
+
+    // if (getAllScripts.length === 0) {
+      
+    //   const response = await scriptCreator(session, hostName);
+      
+    //   console.log("response", response);
+    // }
+
+    // for (let i = 0; i < getAllScripts.length; i++) {
+
+    //   console.log("COMING HERE", getAllScripts.length);
+
+    //   if (getAllScripts.length === 0) {
+
+
+    //   }
+    // };
+
+    console.log("DONE");
+
   });
 
   app.get("/api/sync/route", async (req, res) => {
@@ -297,6 +307,26 @@ function applyPublicEndpoints(app) {
   
   });
 };
+
+function applyNonAuthPublicEndpoints(app) {
+
+  app.get("/api/test/storefront", async (req, res) => {
+
+    try {
+      const htmlFile = join(
+        `${process.cwd()}/`,
+        "storefront.js"
+      );
+
+      return res
+        .status(200)
+        .set("Content-Type", "text/javascript")
+        .send(readFileSync(htmlFile));
+    } catch (error) {
+      console.log("ERROR", error);
+    }
+  });
+}
 
 const SyncCoursesFunction = async (mdl_courses_w_categories, session, i) => {
 
