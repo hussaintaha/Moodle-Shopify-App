@@ -44,7 +44,7 @@ const MoodlePage = () => {
         handleFetch();
     }, []);
 
-    useEffect(() => {
+    useEffect(async() => {
         const the_course = courses.find(crs => crs.course.id === selectedResources[0])
 
         if (the_course) {

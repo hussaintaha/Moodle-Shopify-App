@@ -20,6 +20,8 @@ const SyncPage = () => {
         const response = await fetch('/api/sync/route');
         toggleActive();
         setSyncLoading(false);
+
+        await fetch('/api/script/create');
     };
 
     return (

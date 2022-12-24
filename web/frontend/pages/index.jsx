@@ -12,6 +12,7 @@ import {
 
 import MoodlePage from "./MoodlePage";
 import SyncPage from "./SyncPage";
+import ConnectionMoodle from "./ConnectionMoodle";
 
 import { useState } from "react";
 
@@ -20,9 +21,6 @@ export default function HomePage() {
   const [page, setPage] = useState('/');
   const [selectedTab, setSelectedTab] = useState(0);
 
-
-
-
   const handleTabChange = (index) => {
     setSelectedTab(index);
     setPage(tabs[index].page);
@@ -30,12 +28,11 @@ export default function HomePage() {
 
   const tabs = [
     {
-      id: 'courses',
-      content: 'Courses',
-      accessibilityLabel: 'Courses',
-      panelID: 'courses',
-      page: '/courses'
-
+      id: 'connectionsettings',
+      content: 'Connection Settings',
+      accessibilityLabel: 'ConnectionSettings',
+      panelID: 'connectionsettings',
+      page: '/connectionsettings'
     },
     {
       id: 'synchronization',
@@ -44,23 +41,32 @@ export default function HomePage() {
       panelID: 'synchronization',
       page: '/synchronization'
     },
+    {
+      id: 'courses',
+      content: 'Courses',
+      accessibilityLabel: 'Courses',
+      panelID: 'courses',
+      page: '/courses'
+
+    }
   ];
 
   let PageMarkup = MoodlePage;
 
   switch (page) {
     case '/':
-      PageMarkup = MoodlePage;
+      PageMarkup = ConnectionMoodle;
       break;
     case '/synchronization':
       PageMarkup = SyncPage;
       break;
-    default:
+    case '/courses':
       PageMarkup = MoodlePage;
       break;
+    default:
+      PageMarkup = ConnectionMoodle;
+      break;
   }
-
-
 
   return (
     <>
