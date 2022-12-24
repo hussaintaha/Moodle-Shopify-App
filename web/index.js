@@ -199,9 +199,9 @@ function applyPublicEndpoints(app) {
       const HOST_MD = fetchSettings[0].moodle_url;
       const ACCESSTOKEN_MD = fetchSettings[0].moodle_accessToken;
 
-      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_PLUGIN}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
-      const mdl_categories = await axios.get(`${HOST_MD}/${process.env.MD_PLUGIN}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_CATEGORY}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      const mdl_categories = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_CATEGORY}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       const mdl_courses_w_categories = mdl_courses.data.map(mdl_course => ({
         ...mdl_course,
@@ -262,7 +262,7 @@ function applyPublicEndpoints(app) {
 
     try {
 
-      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_PLUGIN}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       if (!mdl_courses.data?.errorcode) {
 
