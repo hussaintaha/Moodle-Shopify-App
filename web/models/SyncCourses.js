@@ -6,7 +6,7 @@ const syncCourses = mongoose.Schema({
     product: Object,
     created_at: String,
     updated_at: String
-})
+});
 
 const SyncCourses = mongoose.model("Courses", syncCourses); 
 

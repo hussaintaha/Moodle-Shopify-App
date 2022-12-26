@@ -12,6 +12,7 @@ import axios from "axios";
 import mongoose from "mongoose";
 import SyncCourses from "./models/SyncCourses.js";
 import MoodleSettings from "./models/MoodleSettings.js";
+import CustomerData from "./models/CustomerData.js";
 import scriptCreator from "./scripttag-create.js";
 
 const connectDB = async () => {
@@ -328,11 +329,25 @@ function applyNonAuthPublicEndpoints(app) {
     }
   });
 
+  app.use(express.json());
 
   app.post("/api/route/testing", async (req, res ) => {
 
-    console.log("REQUEST", req.body);
-    res.status(200).send({ status: true, data: req.body });
+    const customer_details = new MoodleSettings({
+      _id: new mongoose.Types.ObjectId(),
+      firstName: req.body.customerFirstName,
+      lastName: req.body.customerLastName,
+      email: req.body.customerEmail,
+      password: req.body.customerPassword,
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+  
+    await customer_details.save();
+
+    console.log("Information Saved!");
+
+    res.status(200).send({ 'success': true });
   });
 
 }

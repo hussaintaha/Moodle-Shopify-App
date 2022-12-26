@@ -8,7 +8,7 @@ const mdSettings = mongoose.Schema({
     isValid: Boolean,
     created_at: String,
     updated_at: String
-})
+});
 
 const MoodleSettings = mongoose.model("Settings", mdSettings); 
 
