@@ -333,7 +333,7 @@ function applyNonAuthPublicEndpoints(app) {
 
   app.post("/api/route/testing", async (req, res ) => {
 
-    const customer_details = new MoodleSettings({
+    const customer_details = new CustomerData({
       _id: new mongoose.Types.ObjectId(),
       firstName: req.body.customerFirstName,
       lastName: req.body.customerLastName,
