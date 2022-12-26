@@ -12,6 +12,17 @@ getForm.addEventListener('submit', () => {
     alert(getLastName.value);
     alert(getEmail.value);
     alert(getPassword.value);
-});
 
-fetch('https://gses-dev.myshopify.com/apps/moodle-app/api/route/testing');
+    fetch('https://gses-dev.myshopify.com/apps/moodle-app/api/route/testing', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",  
+        },
+        body: JSON.stringify({
+            customerFirstName  : getFirstName.value,
+            customerLastName   : getLastName.value,
+            customerEmail      : getEmail.value,
+            customerPassword   : getPassword.value,
+        })
+    });
+});

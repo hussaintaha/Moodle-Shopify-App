@@ -329,10 +329,11 @@ function applyNonAuthPublicEndpoints(app) {
   });
 
 
-  app.get("/api/route/testing", async (req, res ) => {
-    console.log("OPKOKOK");
-    res.status(200).send({'status': true});
-  })
+  app.post("/api/route/testing", async (req, res ) => {
+
+    console.log("REQUEST", req.body);
+    res.status(200).send({ status: true, data: req.body });
+  });
 
 }
 
