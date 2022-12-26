@@ -80,4 +80,18 @@ export default {
       // }
     },
   },
+
+
+
+
+
+  ORDERS_PAID: {
+    deliveryMethod: DeliveryMethod.Http,
+    callbackUrl: "/api/webhooks",
+    callback: async (topic, shop, body, webhookId) => {
+      const payload = JSON.parse(body);
+
+      console.log("ORDERSSSSPAIDDDDD", payload);
+    },
+  },
 };
