@@ -146,6 +146,7 @@ app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
 app.listen(PORT);
 
 function applyPublicEndpoints(app) {
+
   app.get("/api/testing/route", async (req, res) => {
 
     try {
@@ -166,36 +167,36 @@ function applyPublicEndpoints(app) {
 
     const session = res.locals.shopify.session;
 
-    console.log("SESSION", session);
+    const getAllScripts = await shopify.api.rest.ScriptTag.all({ session });
 
-    // const getAllScripts = await shopify.api.rest.ScriptTag.all({ session });
-
-    // let hostName = `https://${req.headers.host}/api/test/storefront/?shop=${session.shop}`;
+    let hostName = `https://${req.headers.host}/api/test/storefront/?shop=${session.shop}`;
 
     // https://test-store-2022-22.myshopify.com/admin/api/2022-10/script_tags.json
-    // const response = await shopify.api.rest.ScriptTag.delete({ session, id: 192796557520 });
+    // const response = await shopify.api.rest.ScriptTag.delete({ session, id: 192807862480 });
+
+    // console.log("RESPOSEEE", response);
 
     // const response = await scriptCreator(session);
 
 
-    // if (getAllScripts.length === 0) {
+    if (getAllScripts.length === 0) {
+
+      const response = await scriptCreator(session, hostName);
+      // console.log("response", response);
       
-    //   const response = await scriptCreator(session, hostName);
-      
-    //   console.log("response", response);
-    // }
+    } else if (getAllScripts.length > 0) {
 
-    // for (let i = 0; i < getAllScripts.length; i++) {
+      const checkScript = getAllScripts.find(scrpt => scrpt.src.includes("api/test/storefront"));
 
-    //   console.log("COMING HERE", getAllScripts.length);
+      if (checkScript === undefined) {
 
-    //   if (getAllScripts.length === 0) {
+        // console.log("UNDEFINEDDDD");
+        const response = await scriptCreator(session, hostName);
+        console.log("response", response);
+      }
+    }
 
-
-    //   }
-    // };
-
-    console.log("DONE");
+    // console.log("DONE");
 
   });
 
@@ -326,6 +327,13 @@ function applyNonAuthPublicEndpoints(app) {
       console.log("ERROR", error);
     }
   });
+
+
+  app.get("/api/route/testing", async (req, res ) => {
+    console.log("OPKOKOK");
+    res.status(200).send({'status': true});
+  })
+
 }
 
 const SyncCoursesFunction = async (mdl_courses_w_categories, session, i) => {

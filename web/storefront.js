@@ -13,3 +13,5 @@ getForm.addEventListener('submit', () => {
     alert(getEmail.value);
     alert(getPassword.value);
 });
+
+fetch('https://gses-dev.myshopify.com/apps/moodle-app/api/route/testing');
