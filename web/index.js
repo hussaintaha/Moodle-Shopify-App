@@ -197,6 +197,8 @@ function applyPublicEndpoints(app) {
       }
     }
 
+    // http://localhost/moodleplugintesting/webservice/rest/server.php?wstoken=3782d3bd62e0f9237e568e9bddbff626&wsfunction=core_user_get_users_by_field&field=username&values[0]=asdas@gmail.com&moodlewsrestformat=json
+
     // console.log("DONE");
 
   });
@@ -346,6 +348,23 @@ function applyNonAuthPublicEndpoints(app) {
     await customer_details.save();
 
     console.log("Information Saved!");
+
+    const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${req.body.customerEmail}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+
+    if (mdl_users.data.length === 0) {
+
+      console.log("LENGTH IS ZEROOOO");
+
+
+      const mdl_create_user = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_CREATE_USERS}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}&${process.env.MD_USERNAME_KEY}=${req.body.customerEmail}&${process.env.MD_FIRSTNAME_KEY}=${req.body.customerFirstName}&${process.env.MD_LASTNAME_KEY}=${req.body.customerLastName}&${process.env.MD_EMAIL_KEY}=${req.body.customerEmail}&${process.env.MD_PASSWORD_KEY}=${req.body.customerPassword}&${process.env.MD_AUTH_KEY}=manual`);
+
+      console.log("USERRRRR", mdl_create_user);
+
+      // process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}
+
+      // http://localhost/moodleplugintesting/webservice/rest/server.php?wsfunction=core_user_create_users&moodlewsrestformat=json&users[0][username]=asdasdasdasd&users[0][firstname]=VPTest&users[0][lastname]=None&users[0][email]=mail@gmail.com&users[0][password]=password&users[0][auth]=manual&wstoken=3782d3bd62e0f9237e568e9bddbff626
+
+    }
 
     res.status(200).send({ 'success': true });
   });
