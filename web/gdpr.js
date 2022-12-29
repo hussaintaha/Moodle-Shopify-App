@@ -1,4 +1,7 @@
 import { DeliveryMethod } from "@shopify/shopify-api";
+import mongoose from "mongoose";
+import SyncCourses from "./models/SyncCourses.js";
+import axios from "axios";
 
 export default {
   /**
@@ -91,7 +94,24 @@ export default {
     callback: async (topic, shop, body, webhookId) => {
       const payload = JSON.parse(body);
 
-      console.log("ORDERSSSSPAIDDDDD", payload);
+      // console.log("ORDERSSSSPAIDDDDD", payload.customer.email);
+
+      const checkCourse = await SyncCourses.findOne({
+        "course.displayname": payload.line_items[0].name
+      });
+
+      const mdl_course_id = checkCourse.course.id;
+
+      const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${payload.customer.email}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+
+      const mdl_user_id = mdl_users.data[0].id;
+
+      const enroll_user = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_ENROLL_USERS}&enrolments[0][roleid]=5&enrolments[0][userid]=${mdl_user_id}&enrolments[0][courseid]=${mdl_course_id}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+
+      console.log("enroll_user", enroll_user.data);
+
+
+
     },
   },
 };

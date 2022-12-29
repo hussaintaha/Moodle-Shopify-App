@@ -59,6 +59,7 @@ applyNonAuthPublicEndpoints(app);
 
 // All endpoints after this point will require an active session
 app.use("/api/*", shopify.validateAuthenticatedSession());
+// app.use("/pages/*", shopify.validateAuthenticatedSession());
 
 app.use(express.json());
 
@@ -325,6 +326,23 @@ function applyNonAuthPublicEndpoints(app) {
       return res
         .status(200)
         .set("Content-Type", "text/javascript")
+        .send(readFileSync(htmlFile));
+    } catch (error) {
+      console.log("ERROR", error);
+    }
+  });
+
+  app.get("/api/template/get", async (req, res) => {
+
+    try {
+      const htmlFile = join(
+        `${process.cwd()}/storefront/pages/`,
+        "mycourse.html"
+      );
+
+      return res
+        .status(200)
+        .set("Content-Type", "text/liquid")
         .send(readFileSync(htmlFile));
     } catch (error) {
       console.log("ERROR", error);
