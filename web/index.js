@@ -14,6 +14,7 @@ import SyncCourses from "./models/SyncCourses.js";
 import MoodleSettings from "./models/MoodleSettings.js";
 import CustomerData from "./models/CustomerData.js";
 import scriptCreator from "./scripttag-create.js";
+import ejs from 'ejs';
 
 const connectDB = async () => {
   try {
@@ -185,7 +186,7 @@ function applyPublicEndpoints(app) {
 
       const response = await scriptCreator(session, hostName);
       // console.log("response", response);
-      
+
     } else if (getAllScripts.length > 0) {
 
       const checkScript = getAllScripts.find(scrpt => scrpt.src.includes("api/test/storefront"));
@@ -238,22 +239,22 @@ function applyPublicEndpoints(app) {
   app.post("/api/settings/save", async (req, res) => {
 
     const session = res.locals.shopify.session;
-  
+
     const checkSettings = await MoodleSettings.findOne({
       "shop": session.shop
     });
-  
+
     if (checkSettings) {
-  
+
       let oldvalues = { "shop": session.shop };
       let newvalues = { $set: { 'moodle_url': req.body.mdURL, 'moodle_accessToken': req.body.mdAccessToken, 'updated_at': new Date() }};
-  
+
       await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
-  
+
       console.log("Settings Updated!");
-  
+
     } else {
-  
+
       const md_settings = new MoodleSettings({
         _id: new mongoose.Types.ObjectId(),
         shop: session.shop,
@@ -263,11 +264,11 @@ function applyPublicEndpoints(app) {
         created_at: new Date(),
         updated_at: new Date()
       });
-    
+
       await md_settings.save();
-  
+
       console.log("Settings Saved!");
-  
+
     }
 
     const fetchSettings = await MoodleSettings.find();
@@ -283,9 +284,9 @@ function applyPublicEndpoints(app) {
 
         let oldvalues = { "shop": session.shop };
         let newvalues = { $set: { isValid: true, 'updated_at': new Date() }};
-    
+
         await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
-    
+
         console.log("Settings Updated!");
 
         res.status(200).send({'status': 'success'});
@@ -300,16 +301,16 @@ function applyPublicEndpoints(app) {
       if (res._headerSent === false) {
         let oldvalues = { "shop": session.shop };
         let newvalues = { $set: { isValid: false, 'updated_at': new Date() }};
-    
+
         await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
-  
+
         console.log("Settings Updated!");
-        
+
         res.status(200).send({'status': 'failed'})
       }
 
     }
-  
+
   });
 };
 
@@ -332,20 +333,56 @@ function applyNonAuthPublicEndpoints(app) {
     }
   });
 
-  app.get("/api/template/get", async (req, res) => {
+  app.get("/pages/my-courses-old", async (req, res) => {
 
     try {
-      const htmlFile = join(
+      const liquidFile = join(
         `${process.cwd()}/storefront/pages/`,
-        "mycourse.html"
-      );
+        "mycourses.liquid"
+      )
+
+      const liquidFileContents = readFileSync(liquidFile)
 
       return res
         .status(200)
-        .set("Content-Type", "text/liquid")
-        .send(readFileSync(htmlFile));
+        .set("Content-Type", "application/liquid")
+        .send(liquidFileContents)
     } catch (error) {
       console.log("ERROR", error);
+    }
+  });
+
+  app.get("/pages/my-courses", async (req, res) => {
+
+    try {
+      const ejsFile = join(
+        `${process.cwd()}/storefront/pages/`,
+        "mycourses.ejs"
+      )
+
+      const courses = [
+        { name: 'john doe' },
+        { name: 'jane doe' }
+      ]
+
+      const data = {
+        courses: courses
+      }
+
+      //
+      ejs.renderFile(ejsFile, data, {}, function(err, str) {
+        // console.log('str', str);
+        // console.log('err', err);
+
+        return res
+          .status(200)
+          .set("Content-Type", "application/liquid")
+          .send(str)
+
+      })
+      //
+    } catch (error) {
+      console.log("my-courses ERROR", error);
     }
   });
 
@@ -362,7 +399,7 @@ function applyNonAuthPublicEndpoints(app) {
       created_at: new Date(),
       updated_at: new Date()
     });
-  
+
     await customer_details.save();
 
     console.log("Information Saved!");
