@@ -8,13 +8,19 @@ import shopify from "./shopify.js";
 import productCreator from "./product-creator.js";
 import productUpdater from "./product-updater.js";
 import GDPRWebhookHandlers from "./gdpr.js";
-import axios from "axios";
+
 import mongoose from "mongoose";
+import ejs from 'ejs';
+
 import SyncCourses from "./models/SyncCourses.js";
 import MoodleSettings from "./models/MoodleSettings.js";
 import CustomerData from "./models/CustomerData.js";
 import scriptCreator from "./scripttag-create.js";
-import ejs from 'ejs';
+
+import CourseFetch from "./moodleapi/CourseFetch.js";
+import CategoryFetch from "./moodleapi/CategoryFetch.js";
+import UserFetch from "./moodleapi/UserFetch.js";
+import UserCreate from "./moodleapi/UserCreate.js";
 
 const connectDB = async () => {
   try {
@@ -66,6 +72,11 @@ app.use(express.json());
 
 applyPublicEndpoints(app);
 
+const fetchSettings = await MoodleSettings.find();
+
+const HOST_MD = fetchSettings[0]?.moodle_url;
+const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
+
 app.get("/api/products/count", async (_req, res) => {
   const countData = await shopify.api.rest.Product.count({
     session: res.locals.shopify.session,
@@ -75,10 +86,9 @@ app.get("/api/products/count", async (_req, res) => {
 
 app.get("/api/data/get", async (req, res) => {
 
-  const fetchSettings = await MoodleSettings.find();
+  const fetchData = fetchSettings;
 
-  res.status(200).send( {'success': 'true', 'data': fetchSettings })
-
+  res.status(200).send( {'success': 'true', 'data': fetchData })
 });
 
 app.post("/api/products/create", async (req, res) => {
@@ -154,8 +164,6 @@ function applyPublicEndpoints(app) {
 
     try {
 
-      const session = res.locals.shopify.session;
-
       const fetchCourses = await SyncCourses.find();
 
       res.status(200).send(fetchCourses);
@@ -177,15 +185,12 @@ function applyPublicEndpoints(app) {
     // https://test-store-2022-22.myshopify.com/admin/api/2022-10/script_tags.json
     // const response = await shopify.api.rest.ScriptTag.delete({ session, id: 192807862480 });
 
-    // console.log("RESPOSEEE", response);
-
-    // const response = await scriptCreator(session);
-
 
     if (getAllScripts.length === 0) {
 
       const response = await scriptCreator(session, hostName);
-      // console.log("response", response);
+
+      console.log("Script Added!");
 
     } else if (getAllScripts.length > 0) {
 
@@ -193,15 +198,11 @@ function applyPublicEndpoints(app) {
 
       if (checkScript === undefined) {
 
-        // console.log("UNDEFINEDDDD");
         const response = await scriptCreator(session, hostName);
-        console.log("response", response);
+ 
+        console.log("Script Added!");
       }
     }
-
-    // http://localhost/moodleplugintesting/webservice/rest/server.php?wstoken=3782d3bd62e0f9237e568e9bddbff626&wsfunction=core_user_get_users_by_field&field=username&values[0]=asdas@gmail.com&moodlewsrestformat=json
-
-    // console.log("DONE");
 
   });
 
@@ -210,14 +211,13 @@ function applyPublicEndpoints(app) {
 
       const session = res.locals.shopify.session;
 
-      const fetchSettings = await MoodleSettings.find();
+      // const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
-      const HOST_MD = fetchSettings[0].moodle_url;
-      const ACCESSTOKEN_MD = fetchSettings[0].moodle_accessToken;
+      const mdl_courses = await CourseFetch(HOST_MD, ACCESSTOKEN_MD);
 
-      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      const mdl_categories = await CategoryFetch(HOST_MD, ACCESSTOKEN_MD);
 
-      const mdl_categories = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_CATEGORY}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      // const mdl_categories = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_CATEGORY}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       const mdl_courses_w_categories = mdl_courses.data.map(mdl_course => ({
         ...mdl_course,
@@ -271,14 +271,12 @@ function applyPublicEndpoints(app) {
 
     }
 
-    const fetchSettings = await MoodleSettings.find();
-
-    const HOST_MD = fetchSettings[0].moodle_url;
-    const ACCESSTOKEN_MD = fetchSettings[0].moodle_accessToken;
-
     try {
 
-      const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+
+      const mdl_courses = await CourseFetch(HOST_MD, ACCESSTOKEN_MD);
+
+      // const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       if (!mdl_courses.data?.errorcode) {
 
@@ -294,7 +292,7 @@ function applyPublicEndpoints(app) {
 
     } catch (error) {
 
-      console.log("ERROR");
+      console.log("ERROR", error);
 
     } finally {
 
@@ -392,12 +390,17 @@ function applyNonAuthPublicEndpoints(app) {
 
   app.post("/api/route/testing", async (req, res ) => {
 
+    let firstName = req.body.customerFirstName; 
+    let lastName = req.body.customerLastName;
+    let email = req.body.customerEmail;
+    let password = req.body.customerPassword;
+
     const customer_details = new CustomerData({
       _id: new mongoose.Types.ObjectId(),
-      firstName: req.body.customerFirstName,
-      lastName: req.body.customerLastName,
-      email: req.body.customerEmail,
-      password: req.body.customerPassword,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password,
       created_at: new Date(),
       updated_at: new Date()
     });
@@ -406,21 +409,15 @@ function applyNonAuthPublicEndpoints(app) {
 
     console.log("Information Saved!");
 
-    const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${req.body.customerEmail}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+    const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD);
+
+    // const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${req.body.customerEmail}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
     if (mdl_users.data.length === 0) {
 
-      console.log("LENGTH IS ZEROOOO");
+      const mdl_create_user = await UserCreate(HOST_MD, ACCESSTOKEN_MD, firstName, lastName, email, password);
 
-
-      const mdl_create_user = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_CREATE_USERS}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}&${process.env.MD_USERNAME_KEY}=${req.body.customerEmail}&${process.env.MD_FIRSTNAME_KEY}=${req.body.customerFirstName}&${process.env.MD_LASTNAME_KEY}=${req.body.customerLastName}&${process.env.MD_EMAIL_KEY}=${req.body.customerEmail}&${process.env.MD_PASSWORD_KEY}=${req.body.customerPassword}&${process.env.MD_AUTH_KEY}=manual`);
-
-      console.log("USERRRRR", mdl_create_user);
-
-      // process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}
-
-      // http://localhost/moodleplugintesting/webservice/rest/server.php?wsfunction=core_user_create_users&moodlewsrestformat=json&users[0][username]=asdasdasdasd&users[0][firstname]=VPTest&users[0][lastname]=None&users[0][email]=mail@gmail.com&users[0][password]=password&users[0][auth]=manual&wstoken=3782d3bd62e0f9237e568e9bddbff626
-
+      // const mdl_create_user = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_CREATE_USERS}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}&${process.env.MD_USERNAME_KEY}=${req.body.customerEmail}&${process.env.MD_FIRSTNAME_KEY}=${req.body.customerFirstName}&${process.env.MD_LASTNAME_KEY}=${req.body.customerLastName}&${process.env.MD_EMAIL_KEY}=${req.body.customerEmail}&${process.env.MD_PASSWORD_KEY}=${req.body.customerPassword}&${process.env.MD_AUTH_KEY}=manual`);
     }
 
     res.status(200).send({ 'success': true });
