@@ -362,7 +362,9 @@ function applyNonAuthPublicEndpoints(app) {
 
       const courses = [
         { name: 'john doe' },
-        { name: 'jane doe' }
+        { name: 'jane doe' },
+        { name: 'mike doe' },
+        { name: 'sam doe' },
       ]
 
       const data = {
