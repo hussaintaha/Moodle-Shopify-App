@@ -21,6 +21,7 @@ import CourseFetch from "./moodleapi/CourseFetch.js";
 import CategoryFetch from "./moodleapi/CategoryFetch.js";
 import UserFetch from "./moodleapi/UserFetch.js";
 import UserCreate from "./moodleapi/UserCreate.js";
+import UserCoursesFetch from "./moodleapi/UserCoursesFetch.js";
 
 const connectDB = async () => {
   try {
@@ -357,6 +358,10 @@ function applyNonAuthPublicEndpoints(app) {
         `${process.cwd()}/storefront/pages/`,
         "mycourses.ejs"
       )
+
+      // const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD);
+
+      // console.log("mdl_fetch_user_courses", mdl_fetch_user_courses);
 
       const courses = [
         { name: 'john doe' },
