@@ -200,7 +200,7 @@ function applyPublicEndpoints(app) {
       if (checkScript === undefined) {
 
         const response = await scriptCreator(session, hostName);
- 
+
         console.log("Script Added!");
       }
     }
@@ -352,32 +352,19 @@ function applyNonAuthPublicEndpoints(app) {
   });
 
   app.get("/pages/my-courses", async (req, res) => {
-
     try {
       const ejsFile = join(
         `${process.cwd()}/storefront/pages/`,
         "mycourses.ejs"
       )
 
-      // const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD);
+      // console.log('ejsFile', ejsFile);
 
-      // console.log("mdl_fetch_user_courses", mdl_fetch_user_courses);
+      ejs.renderFile(ejsFile, {}, {}, function(err, str) {
 
-      const courses = [
-        { name: 'john doe' },
-        { name: 'jane doe' },
-        { name: 'mike doe' },
-        { name: 'sam doe' },
-      ]
-
-      const data = {
-        courses: courses
-      }
-
-      //
-      ejs.renderFile(ejsFile, data, {}, function(err, str) {
         // console.log('str', str);
         // console.log('err', err);
+
 
         return res
           .status(200)
@@ -385,7 +372,6 @@ function applyNonAuthPublicEndpoints(app) {
           .send(str)
 
       })
-      //
     } catch (error) {
       console.log("my-courses ERROR", error);
     }
@@ -393,9 +379,53 @@ function applyNonAuthPublicEndpoints(app) {
 
   app.use(express.json());
 
+  app.post("/api/fetch/courses", async(req, res) => {
+
+    try {
+
+      const ejsFile = join(
+        `${process.cwd()}/storefront/pages/parts/`,
+        "grid_items.ejs"
+      )
+
+
+      const email = req.body.customerEmail;
+
+      const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD, email);
+
+      const moodle_user_id = mdl_users.data[0].id;
+
+      const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD, moodle_user_id);
+
+      const courses = mdl_fetch_user_courses.data;
+
+      const data = {
+        courses: courses
+      }
+
+
+
+      ejs.renderFile(ejsFile, data, {}, function(err, str) {
+
+        // console.log('str', str);
+
+        return res
+          .status(200)
+          .set("Content-Type", "text/html")
+          .send(str)
+
+      })
+
+
+    } catch (error) {
+      res.status(500).send({ status: 'failed' });
+    }
+
+  });
+
   app.post("/api/route/testing", async (req, res ) => {
 
-    let firstName = req.body.customerFirstName; 
+    let firstName = req.body.customerFirstName;
     let lastName = req.body.customerLastName;
     let email = req.body.customerEmail;
     let password = req.body.customerPassword;
@@ -414,7 +444,7 @@ function applyNonAuthPublicEndpoints(app) {
 
     console.log("Information Saved!");
 
-    const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD);
+    const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD, email);
 
     // const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${req.body.customerEmail}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
