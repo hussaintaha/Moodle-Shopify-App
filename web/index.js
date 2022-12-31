@@ -5,9 +5,11 @@ import express from "express";
 import serveStatic from "serve-static";
 
 import shopify from "./shopify.js";
+import GDPRWebhookHandlers from "./gdpr.js";
+
 import productCreator from "./product-creator.js";
 import productUpdater from "./product-updater.js";
-import GDPRWebhookHandlers from "./gdpr.js";
+import scriptCreator from "./scripttag-create.js";
 
 import mongoose from "mongoose";
 import ejs from 'ejs';
@@ -15,7 +17,6 @@ import ejs from 'ejs';
 import SyncCourses from "./models/SyncCourses.js";
 import MoodleSettings from "./models/MoodleSettings.js";
 import CustomerData from "./models/CustomerData.js";
-import scriptCreator from "./scripttag-create.js";
 
 import CourseFetch from "./moodleapi/CourseFetch.js";
 import CategoryFetch from "./moodleapi/CategoryFetch.js";
@@ -73,10 +74,10 @@ app.use(express.json());
 
 applyPublicEndpoints(app);
 
-const fetchSettings = await MoodleSettings.find();
+const fetchSettingsFunction = async() => {
+  return await MoodleSettings.find();
+};
 
-const HOST_MD = fetchSettings[0]?.moodle_url;
-const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
 
 app.get("/api/products/count", async (_req, res) => {
   const countData = await shopify.api.rest.Product.count({
@@ -87,9 +88,9 @@ app.get("/api/products/count", async (_req, res) => {
 
 app.get("/api/data/get", async (req, res) => {
 
-  const fetchData = fetchSettings;
+  const fetchSettings = await fetchSettingsFunction();
 
-  res.status(200).send( {'success': 'true', 'data': fetchData })
+  res.status(200).send( {'success': 'true', 'data': fetchSettings });
 });
 
 app.post("/api/products/create", async (req, res) => {
@@ -212,13 +213,12 @@ function applyPublicEndpoints(app) {
 
       const session = res.locals.shopify.session;
 
-      // const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+      const fetchSettings = await fetchSettingsFunction();
+      const HOST_MD = fetchSettings[0]?.moodle_url;
+      const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
 
       const mdl_courses = await CourseFetch(HOST_MD, ACCESSTOKEN_MD);
-
       const mdl_categories = await CategoryFetch(HOST_MD, ACCESSTOKEN_MD);
-
-      // const mdl_categories = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_CATEGORY}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       const mdl_courses_w_categories = mdl_courses.data.map(mdl_course => ({
         ...mdl_course,
@@ -240,6 +240,9 @@ function applyPublicEndpoints(app) {
   app.post("/api/settings/save", async (req, res) => {
 
     const session = res.locals.shopify.session;
+    const fetchSettings = await fetchSettingsFunction();
+    const HOST_MD = fetchSettings[0]?.moodle_url;
+    const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
 
     const checkSettings = await MoodleSettings.findOne({
       "shop": session.shop
@@ -274,10 +277,9 @@ function applyPublicEndpoints(app) {
 
     try {
 
+      const mdl_courses = await CourseFetch(req.body.mdURL, req.body.mdAccessToken);
 
-      const mdl_courses = await CourseFetch(HOST_MD, ACCESSTOKEN_MD);
 
-      // const mdl_courses = await axios.get(`${HOST_MD}/${process.env.MD_WEBSERVICE}=${ACCESSTOKEN_MD}&wsfunction=${process.env.MD_METHOD_COURSE}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
 
       if (!mdl_courses.data?.errorcode) {
 
@@ -286,14 +288,14 @@ function applyPublicEndpoints(app) {
 
         await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
 
-        console.log("Settings Updated!");
+        console.log("Valid Credentials!");
 
         res.status(200).send({'status': 'success'});
       }
 
     } catch (error) {
 
-      console.log("ERROR", error);
+      console.log("ERROR");
 
     } finally {
 
@@ -303,7 +305,7 @@ function applyPublicEndpoints(app) {
 
         await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
 
-        console.log("Settings Updated!");
+        console.log("Invalid Credentials!");
 
         res.status(200).send({'status': 'failed'})
       }
@@ -381,6 +383,10 @@ function applyNonAuthPublicEndpoints(app) {
 
   app.post("/api/fetch/courses", async(req, res) => {
 
+    const fetchSettings = await fetchSettingsFunction();
+    const HOST_MD = fetchSettings[0]?.moodle_url;
+    const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
+
     try {
 
       const ejsFile = join(
@@ -424,6 +430,10 @@ function applyNonAuthPublicEndpoints(app) {
   });
 
   app.post("/api/route/testing", async (req, res ) => {
+
+    const fetchSettings = await fetchSettingsFunction();
+    const HOST_MD = fetchSettings[0]?.moodle_url;
+    const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
 
     let firstName = req.body.customerFirstName;
     let lastName = req.body.customerLastName;

@@ -77,7 +77,7 @@ const MoodlePage = () => {
         const response = await fetch("/api/data/get")
         .then(response => response.json());
         
-        return response.data[0].shop;
+        return response.data[0]?.shop;
     };
 
     const handleCreateProduct = async () => {

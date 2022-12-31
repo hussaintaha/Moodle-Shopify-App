@@ -24,10 +24,10 @@ const ConnectionMoodle = () => {
         const response = await fetch("/api/data/get")
         .then(response => response.json());
 
-        setTextFieldValue(response.data[0].moodle_url);
-        setATTextFieldValue(response.data[0].moodle_accessToken);
+        setTextFieldValue(response.data[0]?.moodle_url);
+        setATTextFieldValue(response.data[0]?.moodle_accessToken);
 
-        if (response.data[0].isValid === true) {
+        if (response.data[0]?.isValid === true) {
             setBannerStatus('success');
             setBannerText('Your Shopify app is successfully connected to your Moodle account');
         } else {
