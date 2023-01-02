@@ -7,6 +7,7 @@ import CustomerData from "../models/CustomerData.js";
 import UserFetch from "../moodleapi/UserFetch.js";
 import UserCreate from "../moodleapi/UserCreate.js";
 import UserCoursesFetch from "../moodleapi/UserCoursesFetch.js";
+import MoodleSettings from "../models/MoodleSettings.js";
 
 const applyNonAuthPublicEndpoints = async (app) => {
 
