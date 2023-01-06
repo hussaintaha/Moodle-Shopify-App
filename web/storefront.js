@@ -16,7 +16,7 @@ if (window.hasOwnProperty('Shopify') && Shopify.hasOwnProperty('Checkout')) {
     timeleft -= 1;
   }, 1000);
 
-} else {
+} else if (window.hasOwnProperty('Shopify') && window.location.href.includes('/account/register'))  {
 
   const getForm = document.querySelector('#create_customer');
   const getFirstName = document.querySelector('#RegisterForm-FirstName');
