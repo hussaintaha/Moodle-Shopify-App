@@ -132,7 +132,7 @@ const applyPublicEndpoints = async (app) => {
         if (checkSettings) {
 
             let oldvalues = { "shop": session.shop };
-            let newvalues = { $set: { 'moodle_url': req.body.mdURL, 'moodle_accessToken': req.body.mdAccessToken, 'updated_at': new Date() } };
+            let newvalues = { $set: { 'moodle_url': req.body.mdURL, 'moodle_accessToken': req.body.mdAccessToken, 'moodle_secretKey': req.body.mdSecretKey, 'updated_at': new Date() } };
 
             await MoodleSettings.findOneAndUpdate(oldvalues, newvalues);
 
@@ -143,8 +143,9 @@ const applyPublicEndpoints = async (app) => {
             const md_settings = new MoodleSettings({
                 _id: new mongoose.Types.ObjectId(),
                 shop: session.shop,
-                moodle_url: req.body.mdURL,
-                moodle_accessToken: req.body.mdAccessToken,
+                moodle_url: req.body.mdURL ?? null,
+                moodle_accessToken: req.body.mdAccessToken ?? null,
+                moodle_secretKey: req.body.mdSecretKey ?? null,
                 isValid: false,
                 created_at: new Date(),
                 updated_at: new Date()

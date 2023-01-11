@@ -5,11 +5,12 @@ const mdSettings = mongoose.Schema({
     shop: String,
     moodle_url: String,
     moodle_accessToken: String,
+    moodle_secretKey: String,
     isValid: Boolean,
     created_at: String,
     updated_at: String
 });
 
-const MoodleSettings = mongoose.model("Settings", mdSettings); 
+const MoodleSettings = mongoose.model("Settings", mdSettings);
 
 export default MoodleSettings;
