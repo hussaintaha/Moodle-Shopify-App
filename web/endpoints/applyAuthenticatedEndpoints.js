@@ -27,30 +27,55 @@ const applyAuthenticatedEndpoints = async (app) => {
     app.post("/api/products/create", async (req, res) => {
         let status = 200;
         let error = null;
-
+        
         let courseID = req.body.courseID;
 
-        let courseDetails = await SyncCourses.findOne({
-            'course.id': courseID
-        });
+        for (let i = 0; i < courseID.length; i++) {
 
-        let courseName = courseDetails.course.displayname;
-        let courseSummary = courseDetails.course.summary;
+            let courseDetails = await SyncCourses.findOne({
+                'course.id': courseID[i]
+            });
 
-        try {
+            let checkProduct = courseDetails.product;
+            let courseName = courseDetails.course.displayname;
+            let courseSummary = courseDetails.course.summary;
 
-            const createProduct = await productCreator(res.locals.shopify.session, courseName, courseSummary);
+            if (checkProduct === 'Not Created') {
 
-            let oldvalues = { 'course.id': courseID }
-            let newvalues = { $set: { 'product': createProduct.productCreate.product } };
+                try {        
+                    const createProduct = await productCreator(res.locals.shopify.session, courseName, courseSummary);
+        
+                    let oldvalues = { 'course.id': courseID[i] }
+                    let newvalues = { $set: { 'product': createProduct.productCreate.product } };
+        
+                    await SyncCourses.findOneAndUpdate(oldvalues, newvalues);
 
-            await SyncCourses.findOneAndUpdate(oldvalues, newvalues);
+                    console.log("Product Created!");
+        
+                } catch (e) {
+                    console.log(`Failed to process products/create: ${e.message}`);
+                    status = 500;
+                    error = e.message;
+                }
 
-        } catch (e) {
-            console.log(`Failed to process products/create: ${e.message}`);
-            status = 500;
-            error = e.message;
+            } else {
+
+                try {
+                    let productID = courseDetails.product.id;
+
+                    const updateProduct = await productUpdater(res.locals.shopify.session, courseName, courseSummary, productID);
+
+                    console.log("Product Updated!");
+        
+                } catch (e) {
+                    console.log(`Failed to process products/create: ${e.message}`);
+                    status = 500;
+                    error = e.message;
+                }
+            }
+
         }
+
         res.status(status).send({ success: status === 200, error });
     });
 
