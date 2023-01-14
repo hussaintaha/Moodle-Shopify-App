@@ -5,7 +5,6 @@ import mongoose from "mongoose";
 import ejs from 'ejs';
 import CustomerData from "../models/CustomerData.js";
 import UserFetch from "../moodleapi/UserFetch.js";
-import UserCreate from "../moodleapi/UserCreate.js";
 import UserCoursesFetch from "../moodleapi/UserCoursesFetch.js";
 import MoodleSettings from "../models/MoodleSettings.js";
 import ShopifySessions from "../models/ShopifySessions.js";
@@ -121,7 +120,7 @@ const applyNonAuthPublicEndpoints = async (app) => {
             details = details.toString();
             const sso_secret_key = fetchSettings[0]?.moodle_secretKey;
 
-            const phpString = 
+            const phpString =
             `
                 $token = '${details}';
                 $enc_method    = 'AES-128-CTR';
@@ -212,14 +211,12 @@ const applyNonAuthPublicEndpoints = async (app) => {
         let firstName = req.body.customerFirstName;
         let lastName = req.body.customerLastName;
         let email = req.body.customerEmail;
-        let password = req.body.customerPassword;
 
         const customer_details = new CustomerData({
             _id: new mongoose.Types.ObjectId(),
             firstName: firstName,
             lastName: lastName,
             email: email,
-            password: password,
             created_at: new Date(),
             updated_at: new Date()
         });
@@ -227,13 +224,6 @@ const applyNonAuthPublicEndpoints = async (app) => {
         await customer_details.save();
 
         console.log("Information Saved!");
-
-        const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD, email);
-
-        if (mdl_users.data.length === 0) {
-
-            const mdl_create_user = await UserCreate(HOST_MD, ACCESSTOKEN_MD, firstName, lastName, email, password);
-        }
 
         res.status(200).send({ 'success': true });
     });

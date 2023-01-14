@@ -1,7 +1,9 @@
 import { DeliveryMethod } from "@shopify/shopify-api";
-import mongoose from "mongoose";
 import SyncCourses from "./models/SyncCourses.js";
-import axios from "axios";
+import MoodleSettings from "./models/MoodleSettings.js";
+import UserFetch from "./moodleapi/UserFetch.js";
+import UserCreate from "./moodleapi/UserCreate.js";
+import UserEnroll from "./moodleapi/UserEnroll.js";
 
 export default {
   /**
@@ -84,34 +86,45 @@ export default {
     },
   },
 
-
-
-
-
   ORDERS_PAID: {
     deliveryMethod: DeliveryMethod.Http,
     callbackUrl: "/api/webhooks",
     callback: async (topic, shop, body, webhookId) => {
       const payload = JSON.parse(body);
 
-      // console.log("ORDERSSSSPAIDDDDD", payload.customer.email);
+      // console.log("ORDERSSSSPAIDDDDD", payload.customer);
 
       const checkCourse = await SyncCourses.findOne({
         "course.displayname": payload.line_items[0].name
       });
 
-      const mdl_course_id = checkCourse.course.id;
+      if (checkCourse) {
 
-      const mdl_users = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_GET_USERS}&field=email&values[0]=${payload.customer.email}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+        const firstName = payload.customer.first_name;
+        const lastName = payload.customer.last_name;
+        const email = payload.customer.email;
 
-      const mdl_user_id = mdl_users.data[0].id;
+        const fetchSettingsFunction = async () => {
+          return await MoodleSettings.find();
+        };
 
-      const enroll_user = await axios.get(`${process.env.MD_HOST}/${process.env.MD_WEBSERVICE}=${process.env.MD_TOKEN}&wsfunction=${process.env.MD_METHOD_ENROLL_USERS}&enrolments[0][roleid]=5&enrolments[0][userid]=${mdl_user_id}&enrolments[0][courseid]=${mdl_course_id}&${process.env.MD_REST_FORMAT}=${process.env.MD_REST_VALUE}`);
+        const fetchSettings = await fetchSettingsFunction();
+        const HOST_MD = fetchSettings[0]?.moodle_url;
+        const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
+        const checkUserExists = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
 
-      console.log("enroll_user", enroll_user.data);
+        if (checkUserExists.data.length === 0) {
 
+          const mdl_create_user = await UserCreate(HOST_MD, ACCESSTOKEN_MD, firstName, lastName, email, `${firstName}A@123`);
+          const fetchUser = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
 
+          const enroll_mdl_user_id = fetchUser.data[0].id;
+          const enroll_mdl_course_id = checkCourse.course.id
 
+          const enrollUser = await UserEnroll(HOST_MD, ACCESSTOKEN_MD, enroll_mdl_user_id, enroll_mdl_course_id);
+        }
+      }
     },
   },
+
 };
