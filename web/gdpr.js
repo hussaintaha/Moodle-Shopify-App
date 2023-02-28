@@ -94,36 +94,63 @@ export default {
 
       // console.log("ORDERSSSSPAIDDDDD", payload.customer);
 
-      const checkCourse = await SyncCourses.findOne({
-        "course.displayname": payload.line_items[0].name
-      });
+      let totalProducts = payload.line_items;
 
-      if (checkCourse) {
+      for (let i = 0; i < totalProducts.length; i++) {
 
-        const firstName = payload.customer.first_name;
-        const lastName = payload.customer.last_name;
-        const email = payload.customer.email;
+        const checkCourse = await SyncCourses.findOne({
+          "course.displayname": payload.line_items[i].name
+        });
 
-        const fetchSettingsFunction = async () => {
-          return await MoodleSettings.find();
-        };
+        if (checkCourse) {
 
-        const fetchSettings = await fetchSettingsFunction();
-        const HOST_MD = fetchSettings[0]?.moodle_url;
-        const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
-        const checkUserExists = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
+          const firstName = payload.customer.first_name;
+          const lastName = payload.customer.last_name;
+          const email = payload.customer.email;
 
-        if (checkUserExists.data.length === 0) {
+          const fetchSettingsFunction = async () => {
+            return await MoodleSettings.find();
+          };
 
-          const mdl_create_user = await UserCreate(HOST_MD, ACCESSTOKEN_MD, firstName, lastName, email, `${firstName}A@123`);
-          const fetchUser = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
+          const fetchSettings = await fetchSettingsFunction();
+          const HOST_MD = fetchSettings[0]?.moodle_url;
+          const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
+          const checkUserExists = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
 
-          const enroll_mdl_user_id = fetchUser.data[0].id;
-          const enroll_mdl_course_id = checkCourse.course.id
+          if (checkUserExists.data.length === 0) {
 
-          const enrollUser = await UserEnroll(HOST_MD, ACCESSTOKEN_MD, enroll_mdl_user_id, enroll_mdl_course_id);
+            const mdl_create_user = await UserCreate(HOST_MD, ACCESSTOKEN_MD, firstName, lastName, email, `${firstName}A@123`);
+            const fetchUser = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
+
+            const enroll_mdl_user_id = fetchUser.data[0].id;
+            const enroll_mdl_course_id = checkCourse.course.id;
+
+            const enrollUser = await UserEnroll(HOST_MD, ACCESSTOKEN_MD, enroll_mdl_user_id, enroll_mdl_course_id);
+
+            // console.log("enrollUser", enrollUser);
+
+          } else if (checkUserExists.data.length > 0) {
+
+            
+            
+            const fetchUser = await UserFetch(HOST_MD, ACCESSTOKEN_MD, payload.customer.email);
+            
+            const enroll_mdl_user_id = fetchUser.data[0].id;
+            
+            const enroll_mdl_course_id = checkCourse.course.id;
+
+            const enrollUser = await UserEnroll(HOST_MD, ACCESSTOKEN_MD, enroll_mdl_user_id, enroll_mdl_course_id);
+
+            // console.log("enrollUser", enrollUser);
+
+
+          }
         }
+
+
       }
+
+
     },
   },
 

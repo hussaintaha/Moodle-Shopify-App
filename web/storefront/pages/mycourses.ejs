@@ -40,7 +40,7 @@
 
   function liquidFunction() {
 
-    fetch('https://gses-dev.myshopify.com/apps/moodle-app/api/fetch/courses', {
+    fetch(`https://${window.top.Shopify.shop}/apps/moodle-app/api/fetch/courses`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

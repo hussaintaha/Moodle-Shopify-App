@@ -149,7 +149,7 @@ const applyNonAuthPublicEndpoints = async (app) => {
                 }).then(function (response) {
 
                     const final_url = `https://moodle.newenergyacademy.com/local/moodleshopify/login.php?login_id=${mdl_user_id}&veridy_code=${hash}&course_id=${mdl_course_id}`;
-                    console.log("final_url", final_url);
+                    // console.log("final_url", final_url);
                     res.redirect(final_url);
                 });
             });
@@ -176,25 +176,90 @@ const applyNonAuthPublicEndpoints = async (app) => {
             const email = req.body.customerEmail;
 
             const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD, email);
-            const moodle_user_id = mdl_users.data[0].id;
-            const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD, moodle_user_id);
 
-            const courses = mdl_fetch_user_courses.data;
+            if (mdl_users.data[0] === undefined) {
 
-            const data = {
-                courses: courses
+                return res.status(200).send("You have not purchased any courses yet, Please have a look at our Course Catalog for more courses.");
+
+            } else {
+
+                const moodle_user_id = mdl_users.data[0].id;
+                const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD, moodle_user_id);
+    
+                const courses = mdl_fetch_user_courses.data;                
+                
+                let data = {
+                    courses: courses
+                }
+
+                let productImg = [];
+
+                
+                for (let i = 0; i < data.courses.length; i++) {
+
+                    const session = await ShopifySessions.findOne({
+                        shop: 'newenergyacademy.myshopify.com'
+                    });
+
+                    try {
+
+                        const client = new shopify.api.clients.Graphql({session});
+                        
+                        let productExists;
+                        
+                        let productName = data.courses[i].displayname;
+
+                        productExists = await client.query({
+                          data: `{
+                            products(query:"title:*${productName}*" first:5 ) {
+                              edges {
+                                node {
+                                  id
+                                  title
+                                  images(first: 5) {
+                                    edges {
+                                        node {
+                                            id
+                                            url
+                                        }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }`,
+                        });
+
+
+                        productExists = productExists.body.data.products.edges[0].node.images.edges[0].node.url;
+
+                        const idk = productImg.push(productExists);
+
+                        data = {
+                            courses: courses,
+                            productImg: productImg 
+                        }
+
+                        
+                    } catch (error) {
+                        console.log("ERROR", error);
+                    }
+                    
+                } 
+
+                ejs.renderFile(ejsFile, data, {}, function (err, str) {
+    
+                    // console.log('str', str);
+    
+                    return res
+                        .status(200)
+                        .set("Content-Type", "text/html")
+                        .send(str)
+    
+                })
+
+
             }
-
-            ejs.renderFile(ejsFile, data, {}, function (err, str) {
-
-                // console.log('str', str);
-
-                return res
-                    .status(200)
-                    .set("Content-Type", "text/html")
-                    .send(str)
-
-            })
 
         } catch (error) {
             res.status(500).send({ status: 'failed' });
@@ -226,6 +291,44 @@ const applyNonAuthPublicEndpoints = async (app) => {
         console.log("Information Saved!");
 
         res.status(200).send({ 'success': true });
+    });
+
+    app.get("/api/user/enrolled", async (req, res) => {
+
+        try {
+
+            const session = await ShopifySessions.findOne({
+                shop: req.query.shop
+            });
+
+            const fetchSettings = await fetchSettingsFunction();
+            const HOST_MD = fetchSettings[0]?.moodle_url;
+            const ACCESSTOKEN_MD = fetchSettings[0]?.moodle_accessToken;
+
+            const loggedInUser = await shopify.api.rest.Customer.find({ session, id: req.query.logged_in_customer_id });
+
+            const mdl_users = await UserFetch(HOST_MD, ACCESSTOKEN_MD, loggedInUser.email);
+            const moodle_user_id = mdl_users.data[0].id;
+
+            const mdl_fetch_user_courses = await UserCoursesFetch(HOST_MD, ACCESSTOKEN_MD, moodle_user_id);
+
+            let productData = [];
+
+            for (let i = 0; i < mdl_fetch_user_courses.data.length; i++) {
+
+                let obj = {
+                    'productName': mdl_fetch_user_courses.data[i].displayname,
+                    'productId': mdl_fetch_user_courses.data[i].id
+                }
+
+                productData.push(obj);
+            }
+
+            res.status(200).send({ data: productData });
+        } catch (error) {
+            res.status(500).send({ error: "error" });
+        }
+
     });
 
 };
